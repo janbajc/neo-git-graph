@@ -95,6 +95,7 @@ export class RepoManager {
     if (!(await this.checkReposExist())) this.sendRepos();
     await this.searchWorkspaceForRepos();
     this.startWatchingFolders();
+    if (await this.checkReposForNewSubmodules()) this.sendRepos();
   }
 
   private removeReposNotInWorkspace() {
