@@ -464,7 +464,6 @@ export class DataSource {
       });
     });
   }
-}
 
   public getSubmodules(repo: string) {
     return new Promise<string[]>((resolve) => {
@@ -505,3 +504,4 @@ export class DataSource {
       });
     });
   }
+}
