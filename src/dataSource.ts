@@ -1,3 +1,5 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
 import * as cp from "node:child_process";
 
 import { escapeRefName, getPathFromStr } from "./backend/utils";
@@ -459,6 +461,46 @@ export class DataSource {
       cmd.on("exit", (code) => {
         if (err) return;
         resolve(code === 0 ? successValue(stdout) : errorValue);
+      });
+    });
+  }
+
+  public getSubmodules(repo: string) {
+    return new Promise<string[]>((resolve) => {
+      fs.readFile(path.join(repo, ".gitmodules"), { encoding: "utf8" }, async (err, data) => {
+        const submodules: string[] = [];
+        if (err) {
+          resolve(submodules);
+          return;
+        }
+
+        const lines = data.split(eolRegex);
+        const sectionRegex = /^\s*\[.*\]\s*$/;
+        const submoduleSectionRegex = /^\s*\[submodule "([^"]+)"\]\s*$/;
+        const pathRegex = /^\s*path\s*=\s*(.*)$/;
+        let inSubmoduleSection = false;
+
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i];
+          if (sectionRegex.test(line)) {
+            inSubmoduleSection = submoduleSectionRegex.test(line);
+            continue;
+          }
+
+          if (!inSubmoduleSection) continue;
+
+          const match = line.match(pathRegex);
+          if (match === null) continue;
+
+          const submodulePath = getPathFromStr(path.resolve(repo, match[1].trim()));
+          if (submodules.includes(submodulePath)) continue;
+
+          if (await this.isGitRepository(submodulePath)) {
+            submodules.push(submodulePath);
+          }
+        }
+
+        resolve(submodules);
       });
     });
   }
