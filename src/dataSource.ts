@@ -492,7 +492,12 @@ export class DataSource {
           const match = line.match(pathRegex);
           if (match === null) continue;
 
-          const submodulePath = getPathFromStr(path.resolve(repo, match[1].trim()));
+          const resolvedPath = path.resolve(repo, match[1].trim());
+          const relativeToRepo = path.relative(repo, resolvedPath);
+          // Ignore entries that escape the repository root.
+          if (relativeToRepo.startsWith("..") || path.isAbsolute(relativeToRepo)) continue;
+
+          const submodulePath = getPathFromStr(resolvedPath);
           if (submodules.includes(submodulePath)) continue;
 
           if (await this.isGitRepository(submodulePath)) {

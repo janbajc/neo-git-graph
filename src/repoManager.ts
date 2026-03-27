@@ -194,11 +194,12 @@ export class RepoManager {
   }
   private async checkReposForNewSubmodules() {
     const repoPaths = Object.keys(this.repos);
-    let changes = false;
+    if (repoPaths.length === 0) return false;
 
-    for (let i = 0; i < repoPaths.length; i++) {
-      if (await this.searchRepoForSubmodules(repoPaths[i])) changes = true;
-    }
+    const results = await evalPromises(repoPaths, 2, (repoPath) =>
+      this.searchRepoForSubmodules(repoPath)
+    );
+    const changes = results.indexOf(true) > -1;
 
     if (changes) this.extensionState.saveRepos(this.repos);
     return changes;
