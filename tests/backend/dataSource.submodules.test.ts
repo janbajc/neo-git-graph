@@ -35,9 +35,9 @@ function makeRepo(prefix: string): string {
   return dir;
 }
 
-let parentRepo: string;
-let submoduleRepo: string;
-let standaloneRepo: string;
+let parentRepo = "";
+let submoduleRepo = "";
+let standaloneRepo = "";
 
 beforeAll(() => {
   submoduleRepo = makeRepo("ngg-submodule-");
@@ -59,9 +59,9 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  fs.rmSync(parentRepo, { recursive: true, force: true });
-  fs.rmSync(submoduleRepo, { recursive: true, force: true });
-  fs.rmSync(standaloneRepo, { recursive: true, force: true });
+  if (parentRepo !== "") fs.rmSync(parentRepo, { recursive: true, force: true });
+  if (submoduleRepo !== "") fs.rmSync(submoduleRepo, { recursive: true, force: true });
+  if (standaloneRepo !== "") fs.rmSync(standaloneRepo, { recursive: true, force: true });
 });
 
 describe("getSubmodules", () => {

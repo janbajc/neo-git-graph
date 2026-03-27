@@ -1,4 +1,3 @@
-import * as fs from "node:fs";
 import * as path from "node:path";
 import * as cp from "node:child_process";
 
@@ -467,32 +466,30 @@ export class DataSource {
 
   public getSubmodules(repo: string) {
     return new Promise<string[]>((resolve) => {
-      fs.readFile(path.join(repo, ".gitmodules"), { encoding: "utf8" }, async (err, data) => {
+      this.execGit(
+        'config -f .gitmodules --get-regexp "^submodule\\..*\\.path$"',
+        repo,
+        async (err, stdout) => {
         const submodules: string[] = [];
         if (err) {
+          // Missing .gitmodules or no submodule.path entries.
           resolve(submodules);
           return;
         }
 
-        const lines = data.split(eolRegex);
-        const sectionRegex = /^\s*\[.*\]\s*$/;
-        const submoduleSectionRegex = /^\s*\[submodule "([^"]+)"\]\s*$/;
-        const pathRegex = /^\s*path\s*=\s*(.*)$/;
-        let inSubmoduleSection = false;
+        const lines = stdout.split(eolRegex);
 
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i];
-          if (sectionRegex.test(line)) {
-            inSubmoduleSection = submoduleSectionRegex.test(line);
-            continue;
-          }
+          if (line.trim() === "") continue;
 
-          if (!inSubmoduleSection) continue;
+          const separatorPos = line.search(/\s/);
+          if (separatorPos === -1) continue;
 
-          const match = line.match(pathRegex);
-          if (match === null) continue;
+          const rawPath = line.slice(separatorPos + 1).trim();
+          if (rawPath === "") continue;
 
-          const resolvedPath = path.resolve(repo, match[1].trim());
+          const resolvedPath = path.resolve(repo, rawPath);
           const relativeToRepo = path.relative(repo, resolvedPath);
           // Ignore entries that escape the repository root.
           if (relativeToRepo.startsWith("..") || path.isAbsolute(relativeToRepo)) continue;
@@ -506,7 +503,8 @@ export class DataSource {
         }
 
         resolve(submodules);
-      });
+        }
+      );
     });
   }
 }
